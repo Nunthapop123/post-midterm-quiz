@@ -3,6 +3,13 @@ import csv, os
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
+movies = []
+with open(os.path.join(__location__, 'movies.csv')) as f:
+    rows = csv.DictReader(f)
+    for r in rows:
+        movies.append(dict(r))
+
+
 class DB:
     def __init__(self):
         self.database = []
@@ -15,13 +22,16 @@ class DB:
             if table.table_name == table_name:
                 return table
         return None
-    
+
+
 import copy
+
+
 class Table:
     def __init__(self, table_name, table):
         self.table_name = table_name
         self.table = table
-    
+
     def join(self, other_table, common_key):
         joined_table = Table(self.table_name + '_joins_' + other_table.table_name, [])
         for item1 in self.table:
@@ -32,7 +42,7 @@ class Table:
                     dict1.update(dict2)
                     joined_table.table.append(dict1)
         return joined_table
-    
+
     def filter(self, condition):
         filtered_table = Table(self.table_name + '_filtered', [])
         for item1 in self.table:
@@ -41,7 +51,7 @@ class Table:
         return filtered_table
 
     def __is_float(self, element):
-        if element is None: 
+        if element is None:
             return False
         try:
             float(element)
@@ -57,7 +67,7 @@ class Table:
             else:
                 temps.append(item1[aggregation_key])
         return function(temps)
-    
+
     def select(self, attributes_list):
         temps = []
         for item1 in self.table:
@@ -100,3 +110,15 @@ class Table:
     def __str__(self):
         return self.table_name + ':' + str(self.table)
 
+
+table1 = Table('movies', movies)
+my_DB = DB()
+my_DB.insert(table1)
+
+my_table1 = my_DB.search('movies')
+my_table1_filtered = my_table1.filter(lambda x: x['Genre'] == 'Comedy').aggregate(lambda x: sum(x)/len(x), 'Worldwide Gross')
+print("average value of Worldwide Gross:", my_table1_filtered)
+
+my_table2 = my_DB.search('movies')
+my_table2_filtered = my_table2.filter(lambda x: x['Genre'] == 'Drama')
+print("minimum Audience score %:", my_table2_filtered.aggregate(lambda x: min(x), 'Audience score %'))
